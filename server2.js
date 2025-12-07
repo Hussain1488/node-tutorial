@@ -1,4 +1,5 @@
 import { createServer } from 'http';
+import { json } from 'stream/consumers';
 
 const users = [
   { id: 1, name: 'Alice', age: 25 },
@@ -20,35 +21,50 @@ const jsonMedelware = (req, res, next) => {
 }
 
 // route handler for /api/users
+const getUserHandler = (req, res) => {
+  // console.log('Users sent');
+  res.write(JSON.stringify(users));
+  res.end();
+}
 
+// Route handler for GET /api/users/:id
+const getUserByIdHandler = (req, res) => {
+  console.log('Get user by ID');
+  const id = parseInt(req.url.split('/')[3]);
+  const user = users.find(u => u.id === id);
+  res.setHeader('Content-Type', 'application/json');
+  if (user) {
+
+    res.write(JSON.stringify(user));
+
+  } else {
+    res.statusCode = 404;
+
+    res.write('User Not Found');
+  }
+  res.end();
+
+}
+
+// Not Found handler
+const notFoundHandler = (req, res) => {
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not Found');
+}
 
 
 const server = createServer((reg, res) => {
   logger(reg, res, () => {
-    if (reg.method === 'GET' && reg.url === '/api/users') {
-      // console.log('Users sent');
-      res.setHeader('Content-Type', 'application/json');
-      res.write(JSON.stringify(users));
-      res.end();
-    } else if (reg.method == 'GET' && reg.url.match(/\/api\/users\/([0-9]+)/)) {
-      const id = parseInt(reg.url.split('/')[3]);
-      const user = users.find(u => u.id === id);
-      res.setHeader('Content-Type', 'application/json');
-      if (user) {
-
-        res.write(JSON.stringify(user));
-
+    jsonMedelware(reg, res, () => {
+      if (reg.method === 'GET' && reg.url === '/api/users') {
+        console.log('Users sent');
+        getUserHandler(reg, res);
+      } else if (reg.method == 'GET' && reg.url.match(/\/api\/users\/([0-9]+)/)) {
+        getUserByIdHandler(reg, res);
       } else {
-        res.statusCode = 404;
-
-        res.write('User Not Found');
+        notFoundHandler(reg, res);
       }
-      res.end();
-
-    } else {
-      res.statusCode = 404;
-      res.end('Not Found');
-    }
+    });
   });
 
 
