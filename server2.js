@@ -52,17 +52,34 @@ const notFoundHandler = (req, res) => {
   res.end('Not Found');
 }
 
+const createUserHandler = (req, res) => {
+  console.log('Creating User');
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
+  req.on('end', () => {
+    const newUser = JSON.parse(body);
+    users.push(newUser);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(newUser));
+  });
+}
 
-const server = createServer((reg, res) => {
-  logger(reg, res, () => {
-    jsonMedelware(reg, res, () => {
-      if (reg.method === 'GET' && reg.url === '/api/users') {
+
+const server = createServer((req, res) => {
+  logger(req, res, () => {
+    jsonMedelware(req, res, () => {
+      if (req.method === 'GET' && req.url === '/api/users') {
         console.log('Users sent');
-        getUserHandler(reg, res);
-      } else if (reg.method == 'GET' && reg.url.match(/\/api\/users\/([0-9]+)/)) {
-        getUserByIdHandler(reg, res);
+        getUserHandler(req, res);
+      } else if (req.method == 'GET' && req.url.match(/\/api\/users\/([0-9]+)/)) {
+        getUserByIdHandler(req, res);
+      } else if (req.url === '/api/users' && req.method === 'POST') {
+        console.log('Create User');
+        createUserHandler(req, res);
       } else {
-        notFoundHandler(reg, res);
+        notFoundHandler(req, res);
       }
     });
   });
